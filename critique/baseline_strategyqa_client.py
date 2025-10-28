@@ -194,9 +194,9 @@ if __name__ == "__main__":
     name = model_name.split('/')[-1].replace('.', '').replace('-', '_').replace(':', '_')
     # output_path = f'../experiments/critique_cpu8/train/strategyqa_train_{name}_parallel_pure_{args.mode}.json'
     # output_path = f'../experiments/critique_cpu8/train_dpo/dpo_strategyqa_{name}_pure_{args.mode}.json'
-    output_path = f'../experiments/critique_cpu8/sft/strategyqa/strategyqa_dev_{name}_parallel_pure_{args.mode}_28_30.json'
-    # output_path = f'../experiments/critique_cpu8/strategyqa/strategyqa_dev_{name}_parallel_pure_{args.mode}.json'
-    # output_path = f'../experiments/critique_cpu8/strategyqa/strategyqa_dev_{name}_parallel_pure_conf_self_critique1.json'
+    # output_path = f'../experiments/critique_cpu8/sft/strategyqa/strategyqa_dev_{name}_parallel_pure_{args.mode}_28_30.json'
+    output_path = f'../experiments/critique_cpu8/strategyqa/strategyqa_dev_{name}_parallel_pure_{args.mode}.json'
+    # output_path = f'../experiments/critique_cpu8/strategyqa/strategyqa_dev_{name}_parallel_pure_{args.mode}_self_critique1.json'
 
     if args.output_path:
         output_path = args.output_path
