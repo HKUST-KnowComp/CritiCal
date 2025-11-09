@@ -61,12 +61,12 @@ Solution: """
 
 # Task defaults ----------------------------------------------------------------
 TASK_DEFAULT_INPUT = {
-    "strategyqa": "../strategyqa_benchmark/dev.json",
-    "comparisonqa": "../comparisonqa_benchmark/comparisonqa_test.json",
-    "hotpotqa": "../hotpotqa_benchmark/hotpot_dev_fullwiki_v1.json",
-    "triviaqa": "../triviaqa-benchmark/unfiltered-web-dev.json",
-    "math500": "../math_benchmark/test500.json",
-    "math_perturb": "../math_perturb_benchmark/math_perturb.json"
+    "strategyqa": "../benchmark/strategyqa/dev.json",
+    "comparisonqa": "../benchmark/comparisonqa/comparisonqa_test.json",
+    "hotpotqa": "../benchmark/hotpotqa/hotpot_dev_fullwiki_v1.json",
+    "triviaqa": "../benchmark/triviaqa/unfiltered-web-dev.json",
+    "math500": "../benchmark/math500/test500.json",
+    "math_perturb": "../benchmark/math_perturb/math_perturb.json"
 }
 
 # IO helpers ------------------------------------------------------------------
