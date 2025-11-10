@@ -1,4 +1,3 @@
-# ...existing code...
 import argparse
 import json
 import logging
@@ -7,57 +6,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import OpenAI
 from tqdm import tqdm
 from utils import resolve_io_keys
+from prompt import *
 
-# Templates -------------------------------------------------------------------
-# StrategyQA / yes-no
-YES_NO_VANILLA_UNC = """Answer the following yes/no question and provide your uncertainty score. Your response should end with 'The answer is [your_answer], and the uncertainty is [uncertainty_percentage]%' where [your_answer] is yes or no, and the uncertainty percentage is a number between 0 and 100, indicating how uncertain you are about the question. If you are not sure, you should give a higher uncertainty percentage.
-Question: {}
-"""
-
-YES_NO_VANILLA_CONF = """Answer the following yes/no question and provide your confidence score. Your response should end with 'The answer is [your_answer], and the confidence is [confidence_percentage]%' where [your_answer] is yes or no, and the confidence percentage is a number between 0 and 100, indicating how sure you are about your answer. If you are not sure, you should give a lower confidence percentage.
-Question: {}
-"""
-
-# Trivia / Hotpot open_end QA
-OPEN_VANILLA_UNC = """Answer the following question and provide your uncertainty score. Your response should end with 'The answer is [your_answer], and the uncertainty is [uncertainty_percentage]%' where [your_answer] is the direct answer to the question, and the uncertainty percentage is a number between 0 and 100, indicating how uncertain you are about the question. If you are not sure, you should give a higher uncertainty percentage.
-Question: {}
-"""
-OPEN_VANILLA_CONF = """Answer the following question and provide your confidence score. Your response should end with 'The answer is [your_answer], and the confidence is [confidence_percentage]%' where [your_answer] is the direct answer to the question, and the confidence percentage is a number between 0 and 100, indicating how sure you are about your answer. If you are not sure, you should give a lower confidence percentage.
-Question: {}
-"""
-
-# Multiple-choice (comparisonqa)
-MC_VANILLA_UNC = """Answer the following multiple choice question. Select only one correct answer from the choices and give your uncertainty score about this question. Your response should end with 'The answer is [option_letter], and the uncertainty is [uncertainty_percentage]%' where the [option_letter] is one of A, B, C and D, and the uncertainty percentage should be a number between 0 and 100, indicating how uncertain you are about the question. If you are not sure, you should give a higher uncertainty percentage.
-Question: {} A. {}. B. {}. C. {}. D. {}
-"""
-MC_VANILLA_CONF = """Answer the following multiple choice question. Select only one correct answer from the choices and give your confidence score about this question. Your response should end with 'The answer is [option_letter], and the confidence is [confidence_percentage]%' where the [option_letter] is one of A, B, C and D, and the confidence percentage should be a number between 0 and 100, indicating how sure you are about your answer. If you are not sure, you should give a lower confidence percentage.
-Question: {} A. {}. B. {}. C. {}. D. {}
-"""
-
-# Math prompts (math500 / math_perturb)
-MATH_VANILLA_UNC = """Answer the following math question and provide your uncertainty score. Your response should end with 'The answer is [your_answer], and the uncertainty is [uncertainty_percentage]%' where [your_answer] is the final answer, and the uncertainty percentage is a number between 0 and 100, indicating how uncertain you are about the question.
-
-Requirements:
-1. Step-by-step reasoning: Provide a clear, step-by-step derivation of the answer, showing all necessary calculations and logical steps in the solution.
-2. Final answer: Present the final answer [your_answer] in LaTeX format, wrapped in '\\boxed{{}}', ensuring the answer is concise and follows mathematical notation standards.
-3. Uncertainty level: After the final answer, state your uncertainty in the solution as a percentage. If you are not sure, you should give a higher uncertainty percentage.
-4. Concise language: Avoid redundancy and focus directly on the problem's core.
-5. Format consistency: Ensure the answer format matches the problem's requirements (e.g., fractions, radicals, intervals).
-
-Question: {}
-Solution: """
-
-MATH_VANILLA_CONF = """Answer the following math question and provide your confidence score. Your response should end with 'The answer is [your_answer], and the confidence is [confidence_percentage]%' where [your_answer] is the final answer, and the confidence percentage is a number between 0 and 100, indicating how sure you are about your answer.
-
-Requirements:
-1. Step-by-step reasoning: Provide a clear, step-by-step derivation of the answer, showing all necessary calculations and logical steps in the solution.
-2. Final answer: Present the final answer [your_answer] in LaTeX format, wrapped in '\\boxed{{}}', ensuring the answer is concise and follows mathematical notation standards.
-3. Confidence level: After the final answer, state your confidence in the solution as a percentage. If you are not sure, you should give a lower confidence percentage.
-4. Concise language: Avoid redundancy and focus directly on the problem's core.
-5. Format consistency: Ensure the answer format matches the problem's requirements (e.g., fractions, radicals, intervals).
-
-Question: {}
-Solution: """
 
 # Task defaults ----------------------------------------------------------------
 TASK_DEFAULT_INPUT = {
@@ -68,6 +18,7 @@ TASK_DEFAULT_INPUT = {
     "math500": "../benchmark/math500/test500.json",
     "math_perturb": "../benchmark/math_perturb/math_perturb.json"
 }
+
 
 # IO helpers ------------------------------------------------------------------
 def load_json(path):
@@ -82,44 +33,15 @@ def save_json(obj, path):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, indent=4)
 
+
 # prepare prompts per task ----------------------------------------------------
-def prepare_prompts_comparisonqa(data, mode):
-    """ComparisonQA: prepare high/low prompts and return prompt_list containing ('high_{idx}'/'low_{idx}')."""
-    prompt_list = []
-    for idx, item in enumerate(tqdm(data, desc="Preparing comparisonqa prompts")):
-        high_q = item.get("high_question", {})
-        low_q = item.get("low_question", {})
-
-        # choose template
-        template = MC_VANILLA_UNC if mode == "unc" else MC_VANILLA_CONF
-
-        high_opts = high_q.get("options", {})
-        low_opts = low_q.get("options", {})
-
-        high_prompt = template.format(
-            high_q.get("question", ""),
-            high_opts.get("A", ""), high_opts.get("B", ""), high_opts.get("C", ""), high_opts.get("D", "")
-        )
-        low_prompt = template.format(
-            low_q.get("question", ""),
-            low_opts.get("A", ""), low_opts.get("B", ""), low_opts.get("C", ""), low_opts.get("D", "")
-        )
-
-        item["high_prompt"] = high_prompt
-        item["low_prompt"] = low_prompt
-
-        prompt_list.append((high_prompt, f"high_{idx}"))
-        prompt_list.append((low_prompt, f"low_{idx}"))
-    return data, prompt_list
-
-
-def prepare_prompts_for_task(task, data, mode):
+def prepare_prompts_for_task(task, data, mode, run_mode="vanilla"):
     """
     return (data, prompt_list) prompt_list format: list[(prompt_str, request_id)]
     request_id format "item_{idx}"
     """
     if task == "comparisonqa":
-        return prepare_prompts_comparisonqa(data, mode)
+        return prepare_prompts_comparisonqa(data, mode, run_mode)
 
     prompt_list = []
     for idx, item in enumerate(tqdm(data, desc=f"Preparing prompts for {task}")):
@@ -128,45 +50,123 @@ def prepare_prompts_for_task(task, data, mode):
 
         q = item.get(input_key, "")
 
-        if task in ("math500", "math_perturb"):
-            prompt = MATH_VANILLA_UNC.format(q) if mode == "unc" else MATH_VANILLA_CONF.format(q)
+        if run_mode == "self_critique":
+            # use self-critique templates and include initial response from input_file
+            initial = item.get("response", "")
+            if task in ("math500", "math_perturb"):
+                template = MATH_SELF_CRITIQUE_UNC if mode == "unc" else MATH_SELF_CRITIQUE_CONF
+                prompt = template.format(q, initial)
+            elif task in ("triviaqa", "hotpotqa"):
+                template = OPEN_SELF_CRITIQUE_UNC if mode == "unc" else OPEN_SELF_CRITIQUE_CONF
+                prompt = template.format(q, initial)
+            else:  # strategyqa / default yes-no style
+                template = YES_NO_SELF_CRITIQUE_UNC if mode == "unc" else YES_NO_SELF_CRITIQUE_CONF
+                prompt = template.format(q, initial)
 
-        elif task in ("triviaqa", "hotpotqa"):
-            prompt = OPEN_VANILLA_UNC.format(q) if mode == "unc" else OPEN_VANILLA_CONF.format(q)
+            item["self_critique_prompt"] = prompt
+        else:
+            # vanilla behavior
+            if task in ("math500", "math_perturb"):
+                prompt = MATH_VANILLA_UNC.format(q) if mode == "unc" else MATH_VANILLA_CONF.format(q)
+            elif task in ("triviaqa", "hotpotqa"):
+                prompt = OPEN_VANILLA_UNC.format(q) if mode == "unc" else OPEN_VANILLA_CONF.format(q)
+            else:  # strategyqa / default yes-no style
+                prompt = YES_NO_VANILLA_UNC.format(q) if mode == "unc" else YES_NO_VANILLA_CONF.format(q)
 
-        else:  # strategyqa / default yes-no style
-            prompt = YES_NO_VANILLA_UNC.format(q) if mode == "unc" else YES_NO_VANILLA_CONF.format(q)
+            item["prompt"] = prompt
 
-        item["prompt"] = prompt
         prompt_list.append((prompt, f"item_{idx}"))
     return data, prompt_list
 
+
+def prepare_prompts_comparisonqa(data, mode, run_mode="vanilla"):
+    """ComparisonQA: prepare high/low prompts and return prompt_list containing ('high_{idx}'/'low_{idx}')."""
+    prompt_list = []
+    for idx, item in enumerate(tqdm(data, desc="Preparing comparisonqa prompts")):
+        high_q = item.get("high_question", {})
+        low_q = item.get("low_question", {})
+
+        # choose template based on run_mode & mode
+        if run_mode == "self_critique":
+            template = MC_SELF_CRITIQUE_UNC if mode == "unc" else MC_SELF_CRITIQUE_CONF
+        else:
+            template = MC_VANILLA_UNC if mode == "unc" else MC_VANILLA_CONF
+
+        high_opts = high_q.get("options", {})
+        low_opts = low_q.get("options", {})
+
+        if run_mode == "self_critique":
+            # expect previous-round responses to be present as high_response / low_response
+            high_initial = item.get("high_response", "")
+            low_initial = item.get("low_response", "")
+
+            high_prompt = template.format(
+                high_q.get("question", ""),
+                high_opts.get("A", ""), high_opts.get("B", ""), high_opts.get("C", ""), high_opts.get("D", ""),
+                high_initial
+            )
+            low_prompt = template.format(
+                low_q.get("question", ""),
+                low_opts.get("A", ""), low_opts.get("B", ""), low_opts.get("C", ""), low_opts.get("D", ""),
+                low_initial
+            )
+            item["high_self_critique_prompt"] = high_prompt
+            item["low_self_critique_prompt"] = low_prompt
+
+        else:
+            high_prompt = template.format(
+                high_q.get("question", ""),
+                high_opts.get("A", ""), high_opts.get("B", ""), high_opts.get("C", ""), high_opts.get("D", "")
+            )
+            low_prompt = template.format(
+                low_q.get("question", ""),
+                low_opts.get("A", ""), low_opts.get("B", ""), low_opts.get("C", ""), low_opts.get("D", "")
+            )
+            item["high_prompt"] = high_prompt
+            item["low_prompt"] = low_prompt
+
+
+        prompt_list.append((high_prompt, f"high_{idx}"))
+        prompt_list.append((low_prompt, f"low_{idx}"))
+    return data, prompt_list
+
+
 # add results back ------------------------------------------------------------
-def add_results_generic(data, results, task):
+def add_results_generic(data, results, task, run_mode="vanilla"):
     if task == "comparisonqa":
-        return add_results_comparisonqa(data, results)
+        return add_results_comparisonqa(data, results, run_mode)
     for response, request_id in results:
         if request_id is None:
             continue
         try:
             idx = int(request_id.split("_", 1)[1])
             if 0 <= idx < len(data):
-                data[idx]["response"] = response
+                if run_mode == "self_critique":
+                    data[idx]["self_critique_response"] = response
+                else:
+                    data[idx]["response"] = response
             for key in ('decomposition', 'evidence', 'context', 'supporting_facts', 'SearchResults', 'EntityPages'):
                 data[idx].pop(key, None)
         except Exception as e:
             print(f"Could not parse request_id '{request_id}': {e}")
 
-def add_results_comparisonqa(data, results):
+
+def add_results_comparisonqa(data, results, run_mode="vanilla"):
     """Attach high_response/low_response back to data using request_id 'high_{idx}' / 'low_{idx}'."""
     for response, request_id in results:
         prefix, idx = request_id.split("_", 1)
         idx = int(idx)
         if 0 <= idx < len(data):
             if prefix == "high":
-                data[idx]["high_response"] = response
+                if run_mode == "self_critique":
+                    data[idx]["high_self_critique_response"] = response
+                else:
+                    data[idx]["high_response"] = response
             elif prefix == "low":
-                data[idx]["low_response"] = response
+                if run_mode == "self_critique":
+                    data[idx]["low_self_critique_response"] = response
+                else:
+                    data[idx]["low_response"] = response
 
 
 # Parallel client (reuse existing logic) -------------------------------------
@@ -229,22 +229,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", type=str, default="strategyqa",
                         choices=["strategyqa", "comparisonqa", "hotpotqa", "triviaqa", "math500", "math_perturb"])
-    parser.add_argument("--input_file", type=str, default=None, help="Path to input JSON file, which is only needed when conducting self_critique.")
+    parser.add_argument("--input_file", type=str, default=None, help="Path to input JSON file, which is only needed when conducting self_critique (contains first-round responses).")
     parser.add_argument("--num_processes", type=int, default=300)
     parser.add_argument("--mode", type=str, default="unc", choices=["unc", "conf"])
+    parser.add_argument("--run_mode", type=str, default="vanilla", choices=["vanilla", "self_critique"], help="Choose 'vanilla' or 'self_critique' flow.")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--output_path", type=str, default=None)
     args = parser.parse_args()
 
+    # For self-critique we require an input_file that contains the first-round responses.
+    if args.run_mode == "self_critique" and not args.input_file:
+        raise SystemExit("Error: --input_file must be provided in self_critique mode (file should contain first-round responses).")
+
     openai_api_key = "EMPTY"
     openai_api_base = f"http://localhost:{args.port}/v1"
 
-    input_file = args.input_file or TASK_DEFAULT_INPUT.get(args.task)
+    # choose input source: if vanilla, allow default dataset; if self_critique, use provided input_file
+    input_file = args.input_file if args.run_mode == "self_critique" else TASK_DEFAULT_INPUT.get(args.task)
 
     data = load_json(input_file)
     data = data[:10]
 
-    data, prompt_list = prepare_prompts_for_task(args.task, data, args.mode)
+    data, prompt_list = prepare_prompts_for_task(args.task, data, args.mode, run_mode=args.run_mode)
 
     client = ParallelChatClient(
         api_key=openai_api_key,
@@ -257,11 +263,11 @@ if __name__ == "__main__":
 
     results = client.generate_batch(prompt_list)
 
-    add_results_generic(data, results, task=args.task)
+    add_results_generic(data, results, task=args.task, run_mode=args.run_mode)
 
     # default output path if not provided
     name = model_name.split("/")[-1].replace(".", "").replace("-", "_").replace(":", "_")
-    default_out = f"../experiments/{args.task}/{args.task}_test_{name}_parallel_vanilla_{args.mode}.json"
+    default_out = f"../experiments/{args.task}/{args.task}_test_{name}_parallel_{args.run_mode}_{args.mode}.json"
     out_path = args.output_path or default_out
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     save_json(data, out_path)
