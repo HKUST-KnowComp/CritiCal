@@ -46,7 +46,7 @@ def prepare_prompts_for_task(task, data, mode, run_mode="vanilla"):
     prompt_list = []
     for idx, item in enumerate(tqdm(data, desc=f"Preparing prompts for {task}")):
         # try resolve input key (if dataset fields vary)
-        input_key, _ = resolve_io_keys(task)
+        input_key = resolve_io_keys(task)
 
         q = item.get(input_key, "")
 
