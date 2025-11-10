@@ -248,7 +248,7 @@ if __name__ == "__main__":
     input_file = args.input_file if args.run_mode == "self_critique" else TASK_DEFAULT_INPUT.get(args.task)
 
     data = load_json(input_file)
-    data = data[:10]
+    # data = data[:10]
 
     data, prompt_list = prepare_prompts_for_task(args.task, data, args.mode, run_mode=args.run_mode)
 

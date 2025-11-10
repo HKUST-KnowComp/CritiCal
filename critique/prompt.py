@@ -111,3 +111,71 @@ Question: {}
 Initial response: {}
 """
 
+
+GEN_CRIT_UNC_STRATEGYQA = """Uncertainty indicates how uncertain the student is about the question. If he is not sure, he should give a higher uncertainty percentage. You are a teacher expert in uncertainty calibration. A student previously answered a question and provided his uncertainty score. Please evaluate the calibration of his uncertainty score for the question based on his response. If his response is incorrect, the uncertainty percentage should be high. 
+
+Question: {}
+Correct Answer: {}
+Facts: {}
+Student's Response: {}
+
+Using the facts and the correct answer as a reference, assess whether the uncertainty percentage in the student's response is well-calibrated, considering the clarity and strength of the reasoning provided and your own knowledge of the question. Is the uncertainty percentage appropriate, too high, or too low? Provide a brief explanation of your evaluation, focusing on how well his uncertainty aligns with the strength of his reasoning and the context of the question.
+"""
+
+GEN_CRIT_CONF_STRATEGYQA = """Confidence indicates how how sure the student is about his answer. If he is not sure, he should give a lower confidence percentage. You are a teacher expert in confidence calibration. A student previously answered a question and provided his confidence score. Please evaluate the calibration of his confidence score for the question based on his response. If his response is incorrect, the confidence percentage should be low. 
+
+Question: {}
+Correct Answer: {}
+Facts: {}
+Student's Response: {}
+
+Using the facts and the correct answer as a reference, assess whether the confidence percentage in the student's response is well-calibrated, considering the clarity and strength of the reasoning provided and your own knowledge of the question. Is the confidence percentage appropriate, too high, or too low? Provide a brief explanation of your evaluation, focusing on how well his confidence aligns with the strength of his reasoning and the context of the question.
+"""
+
+
+GEN_CRIT_UNC_STRATEGYQA_THINK = GEN_CRIT_UNC_STRATEGYQA + "\nUse \"</think>\\n\\n\" to separate your thinking process and your final response."
+GEN_CRIT_CONF_STRATEGYQA_THINK = GEN_CRIT_CONF_STRATEGYQA + "\nUse \"</think>\\n\\n\" to separate your thinking process and your final response."
+
+GEN_CRIT_UNC_COMPARISONQA = """Uncertainty indicates how uncertain the student is about the question. If he is not sure, he should give a higher uncertainty percentage. You are a teacher expert in uncertainty calibration. A student previously answered a question and provided his uncertainty score. Please evaluate the calibration of his uncertainty score for the question based on his response. If his response is incorrect, the uncertainty percentage should be high. 
+
+Question: {}  A. {}  B. {}  C. {}  D. {}
+Correct Answer: {}
+Student's Response: {}
+
+Using the correct answer as a reference, assess whether the uncertainty percentage in the student's response is well-calibrated, considering the clarity and strength of the reasoning provided and your own knowledge of the question. Is the uncertainty percentage appropriate, too high, or too low? Provide a brief explanation of your evaluation, focusing on how well his uncertainty aligns with the strength of his reasoning and the context of the question.
+"""
+
+
+GEN_CRIT_CONF_COMPARISONQA = """Confidence indicates how how sure the student is about his answer. If he is not sure, he should give a lower confidence percentage. You are a teacher expert in confidence calibration. A student previously answered a question and provided his confidence score. Please evaluate the calibration of his confidence score for the question based on his response. If his response is incorrect, the confidence percentage should be low. 
+
+Question: {}  A. {}  B. {}  C. {}  D. {}
+Correct Answer: {}
+Student's Response: {}
+
+Using the correct answer as a reference, assess whether the confidence percentage in the student's response is well-calibrated, considering the clarity and strength of the reasoning provided and your own knowledge of the question. Is the confidence percentage appropriate, too high, or too low? Provide a brief explanation of your evaluation, focusing on how well his confidence aligns with the strength of his reasoning and the context of the question.
+"""
+
+GEN_CRIT_UNC_COMPARISONQA_THINK = GEN_CRIT_UNC_COMPARISONQA + "\nUse \"</think>\\n\\n\" to separate your thinking process and your final response."
+GEN_CRIT_CONF_COMPARISONQA_THINK = GEN_CRIT_CONF_COMPARISONQA + "\nUse \"</think>\\n\\n\" to separate your thinking process and your final response."
+
+GEN_CRIT_UNC_MATH = """Uncertainty indicates how uncertain the student is about the question. If he is not sure, he should give a higher uncertainty percentage. You are a teacher expert in uncertainty calibration. A student previously answered a question and provided his uncertainty score. Please evaluate the calibration of his uncertainty score for the question based on his response. If his response is incorrect, the uncertainty percentage should be high. 
+
+Question: {}
+Correct Answer: {}
+Student's Response: {}
+
+Using the correct answer as a reference, assess whether the uncertainty percentage in the student's response is well-calibrated, considering the clarity and strength of the reasoning provided and your own knowledge of the question. Is the uncertainty percentage appropriate, too high, or too low? Provide a brief explanation of your evaluation, focusing on how well his uncertainty aligns with the strength of his reasoning and the context of the question.
+"""
+
+
+GEN_CRIT_CONF_MATH = """Confidence indicates how how sure the student is about his answer. If he is not sure, he should give a lower confidence percentage. You are a teacher expert in confidence calibration. A student previously answered a question and provided his confidence score. Please evaluate the calibration of his confidence score for the question based on his response. If his response is incorrect, the confidence percentage should be low. 
+
+Question: {}
+Correct Answer: {}
+Student's Response: {}
+
+Using the correct answer as a reference, assess whether the confidence percentage in the student's response is well-calibrated, considering the clarity and strength of the reasoning provided and your own knowledge of the question. Is the confidence percentage appropriate, too high, or too low? Provide a brief explanation of your evaluation, focusing on how well his confidence aligns with the strength of his reasoning and the context of the question.
+"""
+
+GEN_CRIT_UNC_MATH_THINK = GEN_CRIT_UNC_MATH + "\nUse \"</think>\\n\\n\" to separate your thinking process and your final response."
+GEN_CRIT_CONF_MATH_THINK = GEN_CRIT_CONF_MATH + "\nUse \"</think>\\n\\n\" to separate your thinking process and your final response."
