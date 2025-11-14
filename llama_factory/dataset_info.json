@@ -1,0 +1,38 @@
+{
+    "train_strategyqa_qwen_unc": {
+    "file_name": "file_path_for_train_strategyqa_qwen_unc.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  },
+  "val_strategyqa_qwen_unc": {
+    "file_name": "file_path_for_val_strategyqa_qwen_unc.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  },
+  "train_strategyqa_qwen_conf": {
+    "file_name": "file_path_for_train_strategyqa_qwen_conf.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  },
+  "val_strategyqa_qwen_conf": {
+    "file_name": "file_path_for_val_strategyqa_qwen_conf.json",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "system": "system"
+    }
+  }
+}
