@@ -8,11 +8,11 @@ Accurate confidence calibration in Large Language Models (LLMs) is critical for 
 
 ## Results
 
-<img src="./figure/result.png" alt="Data Example" style="width: 40%; height: auto;" />
+<img src="./figure/result.png" alt="Data Example" style="width: 50%; height: auto;" />
 
 ## Pipeline
 
-<img src="./figure/pipeline.png" alt="Data Example" style="width: 70%; height: auto;" />
+<img src="./figure/pipeline.png" alt="Data Example" style="width: 90%; height: auto;" />
 
 ## Requirements
 
