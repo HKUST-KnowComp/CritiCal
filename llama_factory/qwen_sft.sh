@@ -1,7 +1,7 @@
 # Define dataset ID list (assuming train1/val1, train2/val2, etc.)
 DATASETS=("train_strategyqa_qwen_unc" "train_strategyqa_qwen_conf")
 VAL_DATASETS=("val_strategyqa_qwen_unc" "val_strategyqa_qwen_conf")
-OUTPUT_DIR=("train_strategyqa_qwen_unc" "train_strategyqa_qwen_conf")
+OUTPUT_DIR=("strategyqa_qwen_unc" "strategyqa_qwen_conf")
 
 # You can change the following parameters as needed
 # Base parameters
