@@ -183,7 +183,7 @@ class ParallelChatClient:
 
     def _generate_single(self, prompt, request_id):
         try:
-            model_name = self.client.models.list().data[0].id
+            model_name = discover_single_model(self.client.base_url)
             chat_completion = self.client.chat.completions.create(
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
@@ -224,6 +224,34 @@ class ParallelChatClient:
             results.sort(key=lambda x: int(x[1].split("_", 1)[1]))
         return results
 
+# def strip_chatcompletions_suffix(base_url: str) -> str:
+#     base_url = base_url.rstrip("/")
+#     suffixes = [
+#         "/chat/completions",
+#         "/v1/chat/completions",
+#     ]
+#     for suffix in suffixes:
+#         if base_url.endswith(suffix):
+#             return base_url[: -len(suffix)]
+#     return base_url
+
+def discover_single_model(base_url: str) -> str:
+    client = OpenAI(api_key="EMPTY", base_url=base_url, timeout=120)
+    models = client.models.list()
+    ids = [item.id for item in models.data]
+    if len(ids) == 1:
+        return ids[0]
+    elif len(ids) == 2:
+        # print(
+        #     "Found 2 models at %s: %s, using the second one (LoRA): %s",
+        #     base_url, ids, ids[1],
+        # )
+        return ids[1]
+    else:
+        raise ValueError(
+            f"Expected 1 or 2 served models at {base_url}, but found {len(ids)}: {ids}"
+        )
+
 # CLI ------------------------------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -258,7 +286,7 @@ if __name__ == "__main__":
         num_processes=args.num_processes
     )
 
-    model_name = client.client.models.list().data[0].id
+    model_name = discover_single_model(openai_api_base)
     print(f"Using model: {model_name}")
 
     results = client.generate_batch(prompt_list)
